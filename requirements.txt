@@ -1,9 +1,13 @@
-# Vision pipeline (existing yarnenv)
-torch==2.15.0+cpu
-torchvision
-scikit-learn
-Pillow
-
-# Advisory pipeline (llmenv; install from current source as documented)
-# git clone https://github.com/huggingface/optimum-executorch.git /tmp/optimum-executorch
-# pip install /tmp/optimum-executorch
+# Unified Vision & ExecuTorch LLM Environment Requirements
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.1.0
+torchvision>=0.16.0
+scikit-learn>=1.3.0
+Pillow>=10.0.0
+huggingface_hub>=0.20.0
+accelerate>=0.26.0
+optimum>=2.0.0
+transformers==5.0.0rc1
+tokenizers==0.22.2
+# optimum-executorch is installed via:
+# git clone https://github.com/huggingface/optimum-executorch.git /tmp/optimum-executorch && pip install --no-deps /tmp/optimum-executorch

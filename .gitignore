@@ -1,8 +1,8 @@
 Yarn Defect Dataset/
 yarnenv/
 llmenv/
+env/
 llama_model/
-yarn.pt
 inspection_log.csv
 __pycache__/
 *.py[cod]

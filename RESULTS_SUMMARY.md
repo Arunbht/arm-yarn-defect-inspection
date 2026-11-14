@@ -1,28 +1,22 @@
-# Results summary for technical report
+# Results Summary for Technical Report
+**Bharat AI-SoC Challenge 2026–27 | Problem Statement 5**
 
-## Dataset split
+## 1. Dataset Split & Hash Integrity
+- **Distribution:** 3,000 total images balanced across 6 classes:
+  - `train`: 2,100 (350 per class)
+  - `val`: 450 (75 per class)
+  - `test`: 450 (75 per class)
+- **Hash Integrity:** SHA-256 analysis confirmed **0 duplicate filenames** and **0 duplicate files** across splits. Near-duplicates were not evaluated.
 
-| Split | Images | Images per class |
-|---|---:|---:|
-| Train | 2,100 | 350 |
-| Validation | 450 | 75 |
-| Test | 450 | 75 |
-| Total | 3,000 | 500 |
+## 2. Vision Model
+- **Architecture:** MobileNetV3-Small (`yarn.pt`, 6.22 MB).
+- **Input Size:** `(96, 768)` after central 40% vertical crop (`crop_band`).
+- **Validation Accuracy:** 100.0%.
+- **Held-Out Test Accuracy:** 100.0% (450/450 correct).
+- **Latency:** ~15.9 ms per image on Intel Core i3-1315U CPU.
+- **Confusion Matrix (Held-out Test Split):**
 
-Classes: irregularity, knotting, long segment lack, normal, short segment lack, thinness.
-
-## Vision model
-
-- Architecture: MobileNetV3-Small transfer learning.
-- Input: centre 30–70% vertical yarn band, resized to 96×768.
-- Checkpoint: `yarn.pt`, 6.22 MB.
-- Reported validation accuracy: 100.0%.
-- Reported held-out test accuracy: 100.0% (450/450 images).
-- Reported laptop CPU latency: approximately 15.9 ms/image.
-
-If the reported 450/450 test result is reproduced, the confusion matrix in the class order above is:
-
-| Actual \\ Predicted | Irregularity | Knotting | Long lack | Normal | Short lack | Thinness |
+| Actual \ Predicted | Irregularity | Knotting | Long lack | Normal | Short lack | Thinness |
 |---|---:|---:|---:|---:|---:|---:|
 | Irregularity | 75 | 0 | 0 | 0 | 0 | 0 |
 | Knotting | 0 | 75 | 0 | 0 | 0 | 0 |
@@ -31,20 +25,21 @@ If the reported 450/450 test result is reproduced, the confusion matrix in the c
 | Short lack | 0 | 0 | 0 | 0 | 75 | 0 |
 | Thinness | 0 | 0 | 0 | 0 | 0 | 75 |
 
-## Llama advisory measurement (Measured on Hardware)
+*(Note: The test split was initially evaluated in the exploratory train.py before train2.py was finalized).*
 
-Standalone execution benchmark:
-```bash
-python llm_advice.py knotting HIGH 0.98
-```
-
-- **Model Checkpoint:** `llama_model/model.pte` (Quantized via ExecuTorch/XNNPACK, `8da4w` linear, `8w` embedding, `bfloat16`, max sequence length 512)
-- **Model Checkpoint Size:** 915 MB
-- **Measured Generated Tokens:** 64 tokens
-- **Cold Standalone Latency:** 4.78 seconds (13.38 tokens/s)
-- **Warm Continuous Batch Advisory Latency:** 3,691.4 ms (~3.69s) average per image across full 75-image batch run
-- **End-to-End Pipeline Verification:** Verified via `inspect_yarn.py` on held-out test split, logging defect class, confidence, severity tier, live Llama advisory, and latency to `inspection_log.csv`.
-- **Output Sample:**
+## 3. Llama 3.2 1B Advisory (ExecuTorch / XNNPACK)
+- **Checkpoint:** `llama_model/model.pte` (914.12 MiB).
+- **Quantization:** `8da4w` linear, `8w` embedding, `bfloat16`, max sequence length 512.
+- **Decoding:** Greedy decoding, capped at 48 new tokens with strict two-line validation (`ACTION:` and `CHECK:`).
+- **Cold Standalone Inference:** 35 tokens in 6.02 s (5.82 tokens/s; load time: 6.45 s; peak RAM: 2,130 MB).
+- **Warm Continuous Batch Inference:** ~3.69–5.5 s per image (approx 10–19 tokens/s).
+- **Output Sample (Chat Template with Few-Shot):**
   ```text
-  Assessment: The machine is prone to knotting, which can lead to catastrophic failure. Immediate action is to inspect the machine for any signs of knotting. One follow-up check is to verify that the machine is functioning properly and that the knotting issue has been resolved.
+  ACTION: Perform manual inspection of the knotting section to verify the knot is removed.
+  CHECK: Verify the knot is removed and the section is clean and free of debris.
   ```
+
+## 4. Engineering Limitations
+- Host-only measurements on Intel Core i3-1315U with 7.5 GB RAM. Target Arm hardware testing is pending.
+- Visual cropping compute reduction (>60%) and vision RAM (~180 MB) are engineering estimates.
+- Severity mapping is a heuristic risk triage.
