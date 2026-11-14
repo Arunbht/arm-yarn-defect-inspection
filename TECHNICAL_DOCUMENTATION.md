@@ -39,7 +39,7 @@ flowchart TD
 ### A. Core Inference & Pipeline Execution
 
 #### 1. `inspect_yarn.py`
-* **High-Level Purpose:** The central runtime engine for production deployment. It ingests folders of yarn images, runs the vision model, communicates with the LLM advisor subprocess, displays operator alerts, and logs results.
+* **High-Level Purpose:** The central runtime engine for production deployment. It ingests folders of yarn images, runs the vision model, manages the decoupled asynchronous LLM advisory worker thread, displays instant operator alerts, maintains rolling inspection history, and logs results.
 * **Key Components & Functions:**
   * `crop_band(im)`: Crops the image vertically from 30% to 70% height (`(0, int(0.30 * im.height), im.width, int(0.70 * im.height))`).
     * *Why:* Yarn cameras are fixed; the thread always travels along the vertical center. Cropping discards irrelevant background machinery (estimated >60% pixel area reduction).
@@ -48,15 +48,15 @@ flowchart TD
     * `irregularity`, `thinness`, `short segment lack` $\rightarrow$ `MEDIUM`
     * `knotting`, `long segment lack` $\rightarrow$ `HIGH`
   * `start_advisor()` & `stop_advisor()`:
-    * *Why:* Spawns `llm_advice.py --serve` as a persistent background subprocess via Python's `subprocess.Popen` with standard I/O pipes. `stop_advisor()` cleanly terminates the process when inspection completes.
+    * Spawns `llm_advice.py --serve` as a persistent background subprocess via Python's `subprocess.Popen` with standard I/O pipes. Performs a handshake reading `{"status": "ready"}` to ensure model weights are fully resident in memory before streaming commences.
   * `fallback_advice(label, severity, conf)`:
-    * *Why:* Factory safety. If the LLM is absent, crashed, or under low confidence (<0.70), this deterministic rule engine outputs immediate safe default actions.
-  * `advise(label, severity, conf)`:
-    * *Why:* Queries the LLM advisor via stdin/stdout IPC. Returns the advice string, `advice_source` (`"llm"` or `"fallback"`), and tokens/s speed.
-  * `trigger_alert(label, severity, conf, advice)`:
-    * *Why:* Visual and audible alert for machine operators. Displays bold ANSI color banners (Red for HIGH, Yellow for MEDIUM) and emits the ASCII terminal bell (`\a`).
+    * Factory safety. If the LLM is absent, crashed, or under low confidence (<0.70), this deterministic rule engine outputs immediate safe default actions.
+  * `get_history_summary(history_window)`:
+    * Maintains a FIFO rolling history of the last $N=20$ inspected frames, computing defect count and dominant defect type to provide temporal context to the LLM.
+  * `trigger_alert(label, severity, conf, extra_info)`:
+    * Immediate visual and audible alert for machine operators upon frame classification. Displays bold ANSI color banners (Red for HIGH, Yellow for MEDIUM) and emits the ASCII terminal bell (`\a`) with zero LLM queuing delay.
   * `--stream FPS`:
-    * *Why:* Replays input frames at a specified frame rate, measuring sustained throughput and counting dropped frames caused by processing latency.
+    * Replays input frames at a specified frame rate. Vision runs synchronously on every frame at the target FPS, while Llama runs in an asynchronous background worker thread (`queue.Queue(maxsize=1)`) with per-class cooldown (default 10s) to drop stale requests without blocking frame pacing.
 
 ---
 
@@ -65,8 +65,8 @@ flowchart TD
 #### 2. `llm_advice.py`
 * **High-Level Purpose:** The dedicated on-device LLM inference daemon that interfaces with the quantized ExecuTorch runtime.
 * **Key Components & Functions:**
-  * `build_prompt(tokenizer, label, severity, confidence)`:
-    * Formats the prompt using the official **Llama 3.2 chat template** with a system prompt and two short few-shot examples, enforcing strict two-line structure:
+  * `build_prompt(tokenizer, label, severity, confidence, history_str)`:
+    * Formats the prompt using the official **Llama 3.2 chat template** with a system prompt and two short few-shot examples, passing defect class, severity, confidence, and rolling production history:
       ```text
       ACTION: <one short sentence>
       CHECK: <one short sentence>
@@ -117,16 +117,33 @@ flowchart TD
 
 ## 4. Measured Performance Benchmarks
 
-All metrics below were measured on the host development machine:
+All metrics below are explicitly marked as measured on the host development machine or engineering estimates:
 
-| Metric | Vision Model (MobileNetV3-Small) | Generative Advisor (Llama-3.2-1B) | Full End-to-End Pipeline |
-| :--- | :--- | :--- | :--- |
-| **Model Format** | PyTorch (`yarn.pt`) | ExecuTorch XNNPACK (`model.pte`) | Hybrid Vision + SLM Pipeline |
-| **Quantization** | FP32 | `8da4w` linear, `8w` embedding, `bfloat16` | Mixed Precision Edge Stack |
-| **Model Size** | **6.22 MB** (measured) | **914.12 MiB** (measured) | **~920 MB Total** |
-| **Test Accuracy** | **100.0%** (450 / 450 images) | 100% formatted `ACTION:` / `CHECK:` | Verified on held-out split |
-| **Inference Speed** | **~15.9 ms / image** (measured) | **10.4–13.4 tok/s** (cold) / **~17–20 tok/s** (warm) | **~3.69–5.5 s** (when LLM runs per frame) |
-| **RAM Footprint** | ~180 MB *(estimated)* | 1,384 MB (load) / 2,130 MB (peak generation) | Stable under 7.5 GB Host RAM |
+| Metric | Vision Model (MobileNetV3-Small) | Generative Advisor (Llama-3.2-1B) | Full End-to-End Pipeline | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Model Format** | PyTorch (`yarn.pt`) | ExecuTorch XNNPACK (`model.pte`) | Hybrid Edge Stack | Verified |
+| **Quantization** | FP32 | `8da4w` linear, `8w` embedding, `bfloat16` | Mixed Precision | Verified |
+| **Model Size** | **6.22 MB** | **914.12 MiB** | **~920.3 MB Total** | **Measured** |
+| **Test Accuracy** | **100.0%** (450 / 450 images) | 100% formatted `ACTION:` / `CHECK:` | Held-out test split | **Measured** |
+| **Model Load Time** | ~0.08 s | 6.45 s | 6.53 s cold start | **Measured** |
+| **Inference Speed** | **~15.9 ms / image** (~63 FPS idle; 19–109 ms under LLM load) | **3.8–6.5 tokens/s** (35–48 tokens per advisory) | **5.20–8.62 s per advisory** | **Measured** |
+| **RAM Footprint** | ~180 MB *(estimated)* | 1,384 MB (load) / 2,130 MB (peak generation) | Stable under 7.5 GB Host RAM | **Measured** |
+
+### Streaming Performance Benchmarks (100-Frame Stress Test)
+Using asynchronous queue size 1 and a 10s per-class advisory cooldown:
+* **2.0 FPS Stream Target:**
+  * **Sustained FPS:** 1.96 FPS *(measured)*
+  * **Dropped Frames:** 4 *(measured)*
+  * **Background LLM Calls:** 6 *(measured)*
+  * **Advice Latency (Alert to Completion):** 5.71 s average (range: 5.20 s – 6.42 s) *(measured)*
+* **10.0 FPS Stream Target:**
+  * **Sustained FPS:** 7.18 FPS *(measured)*
+  * **Dropped Frames:** 66 *(measured; caused by CPU saturation from concurrent XNNPACK inference)*
+  * **Background LLM Calls:** 2 *(measured)*
+  * **Advice Latency (Alert to Completion):** 8.10 s average (range: 7.58 s – 8.62 s) *(measured)*
+
+> [!IMPORTANT]
+> **Operator Advisory Disclaimer:** Generated advice is an advisory suggestion for a human machine operator, not an automatic machine action. All critical machine interventions (such as stopping spindle lines or re-tensioning) require operator inspection and confirmation.
 
 ---
 
@@ -147,6 +164,8 @@ Thinness                   0           0         0        0          0        75
 
 ## 6. Dataset Methodology & Integrity Disclosures
 
+* **Dataset Citation:** "Li, lizile (2025), 'Yarn Defect Dataset', Mendeley Data, V1, doi: 10.17632/t7hcfmn482.1. CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Download: https://data.mendeley.com/datasets/t7hcfmn482/1. Original dataset: 3,000 images, 500 per class. We split each class 350/75/75 (train/val/test)."
+* **Physical Dataset Properties:** The capture protocol and number of physical yarn samples are not described by the dataset page.
 * **Splits:** 2,100 train / 450 val / 450 test (70/15/15 balanced split across 6 classes).
 * **Hash Integrity:** SHA-256 analysis across all 3,000 files verified **0 exact duplicate files** and **0 duplicate filenames** across splits. Near-duplicates (perceptual similarity or consecutive temporal frames) were not evaluated.
 * **Development History:** In the initial exploratory script (`train.py`), the test split was evaluated at the end of training. The architectural decisions in `train2.py` (central vertical band crop, 96×768 resize, horizontal flip, and fine-tuning layer 9+) were informed by those initial observations before the final test split was frozen.

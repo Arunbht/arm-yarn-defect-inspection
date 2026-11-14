@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ExecuTorch Llama advisory component for yarn-defect inspection."""
+"""ExecuTorch Llama advisory component for yarn-defect inspection with trend context."""
 import argparse
 import json
 import os
@@ -11,29 +11,54 @@ ROOT = Path(__file__).resolve().parent
 DEFAULT_MODEL_DIR = Path(os.environ.get("LLAMA_MODEL_DIR", ROOT / "llama_model"))
 
 FEW_SHOT_EXAMPLES = [
-    {"role": "user", "content": "Defect: irregularity\nSeverity: MEDIUM\nConfidence: 0.95"},
-    {"role": "assistant", "content": "ACTION: Mark section and adjust yarn tension on winding spindle.\nCHECK: Verify spinning traveler speed and package alignment."},
-    {"role": "user", "content": "Defect: knotting\nSeverity: HIGH\nConfidence: 0.99"},
-    {"role": "assistant", "content": "ACTION: Stop winding spindle immediately and cut out the knotted section.\nCHECK: Inspect knotter mechanism and yarn guide clearance."}
+    {
+        "role": "user",
+        "content": (
+            "Textile Defect: irregularity\nSeverity: MEDIUM\nConfidence: 0.95\n"
+            "Recent Inspections: 1 defect in last 20 yarns (irregularity)"
+        )
+    },
+    {
+        "role": "assistant",
+        "content": (
+            "ACTION: Mark yarn section and adjust tension on winding spindle.\n"
+            "CHECK: Verify traveler speed and package alignment."
+        )
+    },
+    {
+        "role": "user",
+        "content": (
+            "Textile Defect: knotting\nSeverity: HIGH\nConfidence: 0.99\n"
+            "Recent Inspections: 5 defects in last 20 yarns (knotting)"
+        )
+    },
+    {
+        "role": "assistant",
+        "content": (
+            "ACTION: Pause winding spindle and check knotter alignment.\n"
+            "CHECK: Inspect knotter knife and clean yarn path guides."
+        )
+    }
 ]
 
 
-def build_prompt(tokenizer, label, severity, confidence):
+def build_prompt(tokenizer, label, severity, confidence, history_str=""):
+    context_line = f"\nRecent Inspections: {history_str}" if history_str else ""
     messages = [
         {
             "role": "system",
             "content": (
-                "You are an industrial yarn-inspection operator assistant. "
-                "When given a machine classification, write exactly two short lines:\n"
-                "ACTION: <one short sentence>\n"
-                "CHECK: <one short sentence>\n"
-                "Be conservative. Do not claim certainty. Do not output anything else."
+                "You are an automated quality control assistant in a textile spinning mill inspecting textile yarn bobbins. "
+                "Provide machine operator instructions for textile yarn defects. Write exactly two lines:\n"
+                "ACTION: <one short action>\n"
+                "CHECK: <one short check>\n"
+                "Be conservative. Output nothing else."
             )
         },
         *FEW_SHOT_EXAMPLES,
         {
             "role": "user",
-            "content": f"Defect: {label}\nSeverity: {severity}\nConfidence: {confidence:.2f}"
+            "content": f"Textile Defect: {label}\nSeverity: {severity}\nConfidence: {confidence:.2f}{context_line}"
         }
     ]
     return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
@@ -73,8 +98,8 @@ class Advisor:
         self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
         self.model = ExecuTorchModelForCausalLM.from_pretrained(model_dir, export=False)
 
-    def advise(self, label, severity, confidence):
-        prompt = build_prompt(self.tokenizer, label, severity, confidence)
+    def advise(self, label, severity, confidence, history_str=""):
+        prompt = build_prompt(self.tokenizer, label, severity, confidence, history_str)
         input_tokens = self.tokenizer.encode(prompt)
         started = time.perf_counter()
         tokens = self.model.generate(input_tokens, echo=False, max_seq_len=len(input_tokens) + 48)
@@ -91,6 +116,7 @@ def main():
     parser.add_argument("label", nargs="?")
     parser.add_argument("severity", nargs="?")
     parser.add_argument("confidence", nargs="?", type=float)
+    parser.add_argument("--history", type=str, default="")
     parser.add_argument("--model-dir", type=Path, default=DEFAULT_MODEL_DIR)
     parser.add_argument("--serve", action="store_true")
     args = parser.parse_args()
@@ -98,19 +124,29 @@ def main():
         raise SystemExit(f"Llama model directory not found: {args.model_dir}")
     advisor = Advisor(args.model_dir)
     if args.serve:
+        print(json.dumps({"status": "ready"}), flush=True)
         for line in sys.stdin:
             try:
                 item = json.loads(line)
-                advice, tokens, seconds = advisor.advise(item["label"], item["severity"], float(item["confidence"]))
+                hist = item.get("history", "")
+                advice, tokens, seconds = advisor.advise(
+                    item["label"], item["severity"], float(item["confidence"]), hist
+                )
                 tok_s = round(tokens / seconds, 2) if seconds > 0 else 0.0
-                print(json.dumps({"ok": True, "advice": advice, "tokens": tokens, "seconds": seconds, "tok_s": tok_s}), flush=True)
+                print(json.dumps({
+                    "ok": True,
+                    "advice": advice,
+                    "tokens": tokens,
+                    "seconds": seconds,
+                    "tok_s": tok_s
+                }), flush=True)
             except Exception as error:
                 print(json.dumps({"ok": False, "error": str(error)}), flush=True)
         return
     if None in (args.label, args.severity, args.confidence):
         parser.error("label, severity, and confidence are required unless --serve is used")
     try:
-        advice, tokens, seconds = advisor.advise(args.label, args.severity, args.confidence)
+        advice, tokens, seconds = advisor.advise(args.label, args.severity, args.confidence, args.history)
         print(advice)
         print(f"[Llama: {tokens} generated tokens, {seconds:.2f}s, {tokens / seconds:.2f} tokens/s]")
     except Exception as e:

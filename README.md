@@ -26,19 +26,20 @@ source llmenv/bin/activate
 
 ---
 
-## 2. Dataset Instructions
+## 2. Dataset Citation & Source
 
-The dataset contains 3,000 images across 6 classes: `irregularity`, `knotting`, `long segment lack`, `normal`, `short segment lack`, and `thinness`.
+"Li, lizile (2025), 'Yarn Defect Dataset', Mendeley Data, V1, doi: 10.17632/t7hcfmn482.1. CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Download: https://data.mendeley.com/datasets/t7hcfmn482/1. Original dataset: 3,000 images, 500 per class. We split each class 350/75/75 (train/val/test)."
 
-- **Download Link:** [Placeholder: Mendeley Data / Kaggle Dataset Link]
-- **Directory Structure:**
-  Extract the dataset to `Yarn Defect Dataset/` in the project root, or set `export YARN_DATASET_DIR="/path/to/dataset"`:
-  ```text
-  Yarn Defect Dataset/
-  ├── train/ (2,100 images; 350 per class)
-  ├── val/   (450 images; 75 per class)
-  └── test/  (450 images; 75 per class)
-  ```
+*(Note: The capture protocol and number of physical yarn samples are not described by the dataset page).*
+
+### Directory Structure:
+Extract the dataset to `Yarn Defect Dataset/` in the project root, or set `export YARN_DATASET_DIR="/path/to/dataset"`:
+```text
+Yarn Defect Dataset/
+├── train/ (2,100 images; 350 per class)
+├── val/   (450 images; 75 per class)
+└── test/  (450 images; 75 per class)
+```
 
 Verify dataset integrity:
 ```bash
@@ -80,7 +81,7 @@ python inspect_yarn.py "Yarn Defect Dataset/test"
 ```
 
 ### Stream Replay Mode:
-To simulate a real-time frame stream at a target FPS (reporting sustained FPS and dropped frames):
+To simulate a real-time frame stream at a target FPS with non-blocking background LLM advisories and operator alert banners:
 ```bash
 python inspect_yarn.py "Yarn Defect Dataset/test" --stream 2.0
 ```
@@ -88,12 +89,14 @@ python inspect_yarn.py "Yarn Defect Dataset/test" --stream 2.0
 ### Expected Output:
 ```text
   >>> [OPERATOR ALERT - HIGH SEVERITY] <<< 
- DEFECT DETECTED: KNOTTING (Confidence: 100.0%) 
-ADVICE:
-ACTION: Perform manual inspection of the entire winding process to ensure complete removal of the knot.
-CHECK: Verify that the yarn is properly aligned and the winding process is smooth and even.
+ DEFECT: KNOTTING (Confidence: 100.0%) | Trend: 8 defects in last 20 yarns (knotting)
 
-[1/12] Image_20230227151910636.bmp -> knotting 1.00 [HIGH] (llm | 6.5 tok/s) 5692 ms
+  [ASYNC LLM ADVICE COMPLETED for Image_20230227100642991.bmp]
+  Latency from Alert: 6.21s | Speed: 5.3 tok/s | Source: llm
+  ACTION: Immediately stop spindle and inspect yarn for visible signs of knotting.
+  CHECK: Verify yarn quality and inspect for any visible signs of damage or breakage.
+
+[1/100] Image_20230227100642991.bmp -> knotting 1.00 [HIGH] (vision 29.6ms)
 ```
 
 Results are saved to `inspection_log.csv` with columns:
@@ -109,13 +112,19 @@ python test.py
 # or: python test.py "/path/to/Yarn Defect Dataset"
 ```
 
-### Measured Performance:
+### Measured Performance & Benchmarks:
 - **Vision Model:** MobileNetV3-Small (`yarn.pt`, 6.22 MB).
-- **Test Accuracy on Held-Out Split:** 100.0% (450/450 correct; 75 per class).
-- **Vision Latency:** ~15.9 ms per image on laptop CPU.
-- **LLM Model:** ExecuTorch XNNPACK (`model.pte`, 915 MB).
-- **LLM Speed:** ~10.4–13.4 tokens/s cold, ~17–20 tokens/s warm in persistent daemon mode.
-- **Batch Processing Rate:** ~3.69–5.5 s per image (when running full vision + LLM generation per frame).
+- **Test Accuracy on Held-Out Split:** 100.0% (450/450 correct; 75 per class) *(measured)*.
+- **Vision Latency:** ~15.9 ms per image on laptop CPU (~63 FPS idle; 19–109 ms under multi-threaded LLM load) *(measured)*.
+- **LLM Model:** ExecuTorch XNNPACK (`model.pte`, 914.12 MiB) *(measured)*.
+- **LLM Cold Load Time:** 6.45 s *(measured)*.
+- **LLM RAM Footprint:** 1,384 MB load, 2,130 MB peak generation *(measured)*.
+- **LLM Generation Speed:** 3.8–6.5 tokens/s (35–48 tokens generated per advisory) *(measured)*.
+- **Advice Latency (Alert to Completion):** 5.20–8.62 s per advisory *(measured)*.
+- **Stream Benchmarks (100-Frame Stress Test):**
+  - **2.0 FPS Stream:** 1.96 sustained FPS, 4 dropped frames, 6 background LLM calls dispatched, 5.71 s avg advice latency *(measured)*.
+  - **10.0 FPS Stream:** 7.18 sustained FPS, 66 dropped frames, 2 background LLM calls dispatched, 8.10 s avg advice latency *(measured)*.
+- **Operator Advisory Notice:** Generated advisories are suggestions for human machine operators, not automatic machine actions. All critical mechanical shutdowns require operator confirmation.
 
 ---
 

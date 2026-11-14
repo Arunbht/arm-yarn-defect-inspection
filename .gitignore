@@ -4,5 +4,6 @@ llmenv/
 env/
 llama_model/
 inspection_log.csv
+sequence_30/
 __pycache__/
 *.py[cod]
