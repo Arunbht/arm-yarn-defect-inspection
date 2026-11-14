@@ -42,7 +42,8 @@ python llm_advice.py knotting HIGH 0.98
 - **Model Checkpoint Size:** 915 MB
 - **Measured Generated Tokens:** 64 tokens
 - **Cold Standalone Latency:** 4.78 seconds (13.38 tokens/s)
-- **Warm Continuous Batch Advisory Latency:** ~3.2 – 3.7 seconds per advisory (~17 – 20 tokens/s)
+- **Warm Continuous Batch Advisory Latency:** 3,691.4 ms (~3.69s) average per image across full 75-image batch run
+- **End-to-End Pipeline Verification:** Verified via `inspect_yarn.py` on held-out test split, logging defect class, confidence, severity tier, live Llama advisory, and latency to `inspection_log.csv`.
 - **Output Sample:**
   ```text
   Assessment: The machine is prone to knotting, which can lead to catastrophic failure. Immediate action is to inspect the machine for any signs of knotting. One follow-up check is to verify that the machine is functioning properly and that the knotting issue has been resolved.
