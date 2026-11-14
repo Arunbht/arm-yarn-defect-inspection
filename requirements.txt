@@ -1,0 +1,9 @@
+# Vision pipeline (existing yarnenv)
+torch==2.15.0+cpu
+torchvision
+scikit-learn
+Pillow
+
+# Advisory pipeline (llmenv; install from current source as documented)
+# git clone https://github.com/huggingface/optimum-executorch.git /tmp/optimum-executorch
+# pip install /tmp/optimum-executorch
