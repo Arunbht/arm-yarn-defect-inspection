@@ -1,9 +1,36 @@
-Yarn Defect Dataset/
+# Virtual environments
 yarnenv/
 llmenv/
 env/
-llama_model/
-inspection_log.csv
+venv/
+.venv/
+
+# Datasets and sequence directories
+Yarn Defect Dataset/
+dataset/
 sequence_30/
+web_cam/
+
+# Large model weights (Llama 3.2 1B ExecuTorch binary ~914MB)
+llama_model/
+*.pte
+*.bin
+
+# Run logs, outputs, and temporary caches
+inspection_log.csv
+latest_advice.txt
+latest_output.json
+*.log
+temp/
+temp_empty/
+temp_test/
+*.mkv
+*.mp4
+*.avi
+*.mov
+
+# Python bytecode and caches
 __pycache__/
 *.py[cod]
+*$py.class
+.pytest_cache/

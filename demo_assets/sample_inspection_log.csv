@@ -1,0 +1,14 @@
+timestamp,file,defect,confidence,severity,action,check,vision_latency_ms,advice_source,llm_tok_s
+2026-11-23T15:53:01,frame_0001_normal_Image_20230227165446330.bmp,normal,1.000,NONE,Continue winding. Line nominal.,Spindle tension in optimal range.,24.5,fast_path,
+2026-11-23T15:53:02,frame_0002_normal_Image_20230227165452332.bmp,normal,0.999,NONE,Continue winding. Line nominal.,Spindle tension in optimal range.,24.6,fast_path,
+2026-11-23T15:53:03,frame_0003_normal_Image_20230227165509324.bmp,normal,1.000,NONE,Continue winding. Line nominal.,Spindle tension in optimal range.,24.7,fast_path,
+2026-11-23T15:53:04,frame_0004_knotting_Image_20230227100642991.bmp,knotting,1.000,HIGH,Remove defective yarn from production line.,Verify yarn inspection and packaging procedures.,24.8,llm,3.8
+2026-11-23T15:53:07,frame_0005_knotting_Image_20230227100708117.bmp,knotting,1.000,HIGH,Stop spindle immediately for knotting.,Clean knotter mechanism and guide paths.,25.1,fallback,
+2026-11-23T15:53:15,frame_0006_normal_Image_20230227165515328.bmp,normal,1.000,NONE,Continue winding. Line nominal.,Spindle tension in optimal range.,24.5,fast_path,
+2026-11-23T15:53:17,frame_0007_irregularity_Image_20230224154746406.bmp,irregularity,0.998,MEDIUM,Check bobbin tension and yarn take-up.,Verify bobbin rotation and yarn feed rate.,24.6,llm,3.6
+2026-11-23T15:53:20,frame_0008_irregularity_Image_20230224154752406.bmp,irregularity,0.994,MEDIUM,Adjust bobbin tension to reduce irregularity.,Inspect yarn guide for wear.,24.7,fallback,
+2026-11-23T15:53:28,frame_0009_normal_Image_20230227170338867.bmp,normal,1.000,NONE,Continue winding. Line nominal.,Spindle tension in optimal range.,24.6,fast_path,
+2026-11-23T15:53:30,frame_0010_long_segment_lack_Image_20230227093223104.bmp,long segment lack,1.000,HIGH,Adjust bobbin tension on segmenting machine.,Verify bobbin winder accuracy and yarn feed rate.,24.8,llm,3.7
+2026-11-23T15:53:33,frame_0011_long_segment_lack_Image_20230227093225104.bmp,long segment lack,1.000,HIGH,Stop spindle immediately for long segment lack.,Thread new yarn strand through eyelet.,24.7,fallback,
+2026-11-23T15:53:40,frame_0012_normal_Image_20230227170347877.bmp,normal,1.000,NONE,Continue winding. Line nominal.,Spindle tension in optimal range.,24.5,fast_path,
+2026-11-23T15:53:42,frame_0013_thinness_Image_20230227213214299.bmp,thinness,0.992,MEDIUM,Adjust bobbin tension on yarn delivery line.,Verify draft roller pressure and spindle speed.,24.8,llm,3.9

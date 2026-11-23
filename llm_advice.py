@@ -55,7 +55,7 @@ def build_prompt(tokenizer, label, severity, confidence, history_str=""):
                 "Be conservative. Output nothing else."
             )
         },
-        *FEW_SHOT_EXAMPLES,
+        *FEW_SHOT_EXAMPLES[:2],  # 1-shot (reduces prompt prefill latency by ~2s)
         {
             "role": "user",
             "content": f"Textile Defect: {label}\nSeverity: {severity}\nConfidence: {confidence:.2f}{context_line}"
