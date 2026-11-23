@@ -1,29 +1,34 @@
 ARM_CONTEST/
-├── CITATION.cff                      <- Mendeley Dataset Citation (DOI: 10.17632/t7hcfmn482.1)
-├── LICENSE                           <- MIT Open Source License
 ├── README.md                         <- Project overview, quickstart & reproduction commands
 ├── TECHNICAL_DOCUMENTATION.md        <- Complete architectural deep dive & hardware telemetry
 ├── RESULTS_SUMMARY.md                <- Comprehensive benchmark tables & offline audit
 ├── requirements.txt                  <- Host development dependencies
-├── yarn.pt                           <- MobileNetV3-Small FP32 weights (6.22 MB, 1.52M params)
+├── yarn.pt                           <- MobileNetV3-Small FP32 weights (6.0 MB, 98.00% accuracy)
 ├── train2.py                         <- Vision model training recipe (crop_band, CosineAnnealingLR)
 ├── test.py                           <- Quantitative evaluation & confusion matrix generator
 ├── inspect_yarn.py                   <- Production batch inspection engine with rolling history
+├── inspect_live.py                   <- Live folder watcher & dual-terminal inspection engine
+├── setup_env.sh                      <- Unified environment build script
+├── setup_llmenv.sh                   <- Standalone LLM virtual environment installer
+├── export_llama.sh                   <- ExecuTorch XNNPACK 8da4w quantization export script
+├── check.py                          <- Dataset verification & SHA-256 integrity validator
 ├── demo_assets/                      <- Verified report artifacts & demo media
-│   ├── confusion_matrix.png          <- High-res 6x6 test confusion matrix plot
+│   ├── confusion_matrix.png          <- High-res 6x6 test confusion matrix plot (98.00%)
 │   ├── operator_advisory_card.png    <- Rendered Terminal 2 Advisory Card layout
 │   ├── sample_inspection_log.csv     <- 13-row verified inspection log (llm, fallback, fast_path)
 │   └── repo_tree.txt                 <- This repository file structure
 └── rpi5_deployment/                  <- Standalone Raspberry Pi 5 deployment bundle
     ├── README.md                     <- Target-specific Pi 5 quickstart guide
+    ├── pi5_benchmark_report.json     <- Raw hardware telemetry report from physical Raspberry Pi 5
+    ├── benchmark_pi_complete.py      <- All-in-one benchmark & telemetry suite
     ├── requirements_rpi5.txt         <- ARM64 dependency list (ExecuTorch, PyTorch CPU)
     ├── setup_rpi5.sh                 <- One-click automated setup script for Raspberry Pi OS
     ├── inspect_live.py               <- Production real-time folder watcher & dual-terminal engine
-    ├── llm_advice.py                 <- ExecuTorch Llama 3.2 1B advisory daemon (IPC / standalone)
+    ├── llm_advice.py                 <- 1-shot ExecuTorch Llama 3.2 1B advisory daemon (IPC / standalone)
     ├── test_vision.py                <- Standalone vision verification & per-stage latency benchmark
     ├── view_advisory.py              <- Dedicated Terminal 2 Live Operator Advisory Screen
     ├── launch_split.sh               <- Dual-terminal tmux launch automation
     ├── feed_camera.py                <- Virtual camera stream simulator (interval feeder)
     ├── feed_webcam.py                <- Real webcam FIFO watcher & frame injector
     ├── run_cap.py                    <- Drift-compensated interval capture utility
-    └── yarn.pt                       <- Synchronized MobileNetV3-Small model weights
+    └── yarn.pt                       <- Synchronized MobileNetV3-Small model weights (6.0 MB)
