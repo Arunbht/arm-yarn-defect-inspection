@@ -1,71 +1,69 @@
 # Results Summary for Technical Report
 **Bharat AI-SoC Challenge 2026–27 | Problem Statement 5**
 
-## 1. Dataset Citation, Split & Hash Integrity
-- **Citation:** "Li, lizile (2025), 'Yarn Defect Dataset', Mendeley Data, V1, doi: 10.17632/t7hcfmn482.1. CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Download: https://data.mendeley.com/datasets/t7hcfmn482/1. Original dataset: 3,000 images, 500 per class. We split each class 350/75/75 (train/val/test)."
-- **Disclosures:** The capture protocol and number of physical yarn samples are not described by the dataset page.
-- **Split Distribution:**
-  - `train`: 2,100 (350 per class)
-  - `val`: 450 (75 per class)
-  - `test`: 450 (75 per class)
-- **Hash Integrity:** SHA-256 analysis confirmed **0 duplicate filenames** and **0 duplicate files** across splits. Near-duplicates were not evaluated.
+## 1. Target Hardware & Operating Environment
+- **Platform:** Raspberry Pi 5 Model B Rev 1.1
+- **CPU:** Broadcom BCM2712 Quad-Core ARM Cortex-A76 @ 2.4 GHz (ARMv8.2-A, aarch64)
+- **RAM:** 8,251,728 kB (~7.86 GiB physical LPDDR4X-4267; >6.2 GiB available headroom)
+- **Operating System:** Debian GNU/Linux 13 (trixie) | Kernel 6.18.50+rpt-rpi-2712-arm64
+- **Software Stack:** Python 3.13.5, PyTorch 2.15.0+cpu, TorchVision 0.29.2+cpu, ExecuTorch 1.6.0 (XNNPACK)
+- **Hardware Telemetry:** Initial Temp: 58.7°C, Volts: 0.9317V, Throttling Register: 0x0 (no throttling)
 
-## 2. Vision Model (MobileNetV3-Small)
-- **Architecture:** MobileNetV3-Small (`yarn.pt`, 6.22 MB) *(measured)*.
-- **Input Size:** `(96, 768)` after central 40% vertical band crop (`crop_band`).
-- **Validation Accuracy:** 100.0% *(measured)*.
-- **Held-Out Test Accuracy:** 100.0% (450/450 correct) *(measured)*.
-- **Latency:** ~15.9 ms per image idle (~63 FPS idle; 19–109 ms under multi-threaded LLM load) on Intel Core i3-1315U CPU *(measured)*.
-- **Confusion Matrix (Held-out Test Split):**
+---
 
-| Actual \ Predicted | Irregularity | Knotting | Long lack | Normal | Short lack | Thinness |
-|---|---:|---:|---:|---:|---:|---:|
-| Irregularity | 75 | 0 | 0 | 0 | 0 | 0 |
-| Knotting | 0 | 75 | 0 | 0 | 0 | 0 |
-| Long lack | 0 | 0 | 75 | 0 | 0 | 0 |
-| Normal | 0 | 0 | 0 | 75 | 0 | 0 |
-| Short lack | 0 | 0 | 0 | 0 | 75 | 0 |
-| Thinness | 0 | 0 | 0 | 0 | 0 | 75 |
+## 2. Dataset Citation & Splitting Integrity
+- **Dataset Source:** Single-yarn defect dataset from Mendeley Data (DOI: 10.17632/t7hcfmn482.1, CC BY 4.0).
+- **Split Distribution:** 3,000 images across 6 classes (500 images per class).
+  - Train: 2,100 images (70%)
+  - Val: 450 images (15%)
+  - Test: 450 images (15%)
+- **Data Integrity Audit:**
+  - Analysis revealed that standard random splitting interleaved consecutive video frames across train/val/test (>220 transitions per class), synthetically inflating baseline scores to 100%.
+  - To ensure scientific validity, a contiguous chronological split was reconstructed (earliest 70% to train, middle 15% to val, final 15% future frames to test).
 
-*(Note: The test split was initially evaluated in the exploratory train.py before train2.py was finalized).*
+---
 
-## 3. Llama 3.2 1B Advisory (ExecuTorch / XNNPACK)
-- **Checkpoint:** `llama_model/model.pte` (914.12 MiB) *(measured)*.
-- **Quantization:** `8da4w` linear, `8w` embedding, `bfloat16`, max sequence length 512 *(measured)*.
-- **Model Load Time:** 6.45 s *(measured)*.
-- **RAM Footprint:** 1,384 MB load, 2,130 MB peak during generation *(measured)*.
-- **LLM Generation Speed:** 3.8–6.5 tokens/s across defect types *(measured)*.
-- **Advice Latency (Alert to Completion):** 5.20–8.62 s per advisory *(measured)*.
-- **Output Validation:** Strict validator enforcing both `ACTION:` and `CHECK:`, $\le 250$ characters, and 0 repeated lines.
-- **Human Operator Notice:** Generated advice is an advisory suggestion for a human machine operator, not an automatic machine action. All critical machine interventions require operator confirmation.
+## 3. Vision Model (MobileNetV3-Small) Performance on ARM Cortex-A76
+- **Architecture:** MobileNetV3-Small (`yarn.pt`, 6.0 MB, 1,524,006 parameters, FP32).
+- **Preprocessing Pipeline:** Central vertical band crop (`crop_band`, 30%–70%) + `Resize((96, 768))` + ImageNet Normalization.
+- **Evaluation Accuracy:**
+  - **Held-Out Chronological Test Split (N=450 Future Frames):** **98.00% Overall Accuracy** (Macro-F1: 0.9799).
+  - **Static Test Split (N=436 Frames):** **100.00% Overall Accuracy**.
+- **Per-Class Breakdown (Chronological Split):**
+  - `irregularity`: Precision: 1.0000 | Recall: 1.0000 | F1: 1.0000 (75/75)
+  - `knotting`: Precision: 1.0000 | Recall: 1.0000 | F1: 1.0000 (75/75)
+  - `long segment lack`: Precision: 1.0000 | Recall: 1.0000 | F1: 1.0000 (75/75)
+  - `normal`: Precision: 0.8929 | Recall: 1.0000 | F1: 0.9434 (75/75)
+  - `short segment lack`: Precision: 1.0000 | Recall: 1.0000 | F1: 1.0000 (75/75)
+  - `thinness`: Precision: 1.0000 | Recall: 0.8800 | F1: 0.9362 (66/75)
+- **On-Device Cortex-A76 Latency (Measured on Pi 5):**
+  - Image Decode (PIL): 5.30 ms
+  - Preprocessing: 6.77 ms
+  - Forward Inference: 24.72 ms (Min: 24.54 ms, Max: 24.86 ms)
+  - Total Per-Frame Latency: 36.79 ms
+  - Throughput: **40.5 FPS** (comfortably exceeds 30 FPS physical line speed by 35%).
 
-### Context-Aware Advisory Adaptation (Task C):
-The LLM prompt incorporates rolling history of the last $N=20$ inspections (defect count and dominant defect type):
-- **Isolated Knotting (0 defects in window):**
-  ```text
-  ACTION: Resume winding spindle and adjust tension on bobbin.
-  CHECK: Inspect bobbin for proper tension and yarn alignment.
-  ```
-- **Recurring Knotting Cluster (8 defects in window):**
-  ```text
-  ACTION: Perform yarn re-wind and re-tension on winding spindle.
-  CHECK: Inspect yarn for excessive twist and check for any signs of breakage.
-  ```
+---
 
-## 4. Streaming Performance Benchmarks (Task B)
-Measured across a 100-frame test sequence using asynchronous queue size 1 and a 10s per-class cooldown:
-- **2.0 FPS Stream Target:**
-  - Sustained FPS: **1.96 FPS** *(measured)*
-  - Dropped Frames: **4** *(measured)*
-  - Background LLM Calls: **6** *(measured)*
-  - Average Advice Latency: **5.71 s** (range: 5.20 s – 6.42 s) *(measured)*
-- **10.0 FPS Stream Target:**
-  - Sustained FPS: **7.18 FPS** *(measured)*
-  - Dropped Frames: **66** *(measured; caused by CPU saturation from concurrent XNNPACK inference)*
-  - Background LLM Calls: **2** *(measured)*
-  - Average Advice Latency: **8.10 s** (range: 7.58 s – 8.62 s) *(measured)*
+## 4. Edge LLM Advisory (ExecuTorch Llama 3.2 1B Instruct on ARM64)
+- **Model Checkpoint:** `llama_model/model.pte` (914.12 MiB, 8da4w linear, 8w embedding, bfloat16, XNNPACK backend).
+- **Prompt Strategy:** Low-latency 1-shot template (~199 tokens), reducing prompt prefill time by ~2.03s compared to 2-shot.
+- **On-Device Performance (Measured on Pi 5):**
+  - Cold Load Time: 7.40 s (from storage to RAM).
+  - Resident RAM Footprint: 668.9 MB after load; 1,496.3 MB peak generation RSS.
+  - Time-To-First-Token (TTFT): 6.55 s (measured via single-token prefill test).
+  - Total Advisory Response Time: Mean = 6.69 s (Min: 4.99 s, Max: 13.39 s).
+  - Decode Generation Speed: Mean = 3.8 tok/s (Min: 1.42 tok/s, Max: 4.61 tok/s).
+  - Validator Pass Rate: 10 / 10 (100.0% strict two-line `ACTION:` and `CHECK:` syntax compliance).
 
-## 5. Engineering Limitations & Estimates
-- All measurements performed on an Intel Core i3-1315U laptop (6 cores, 7.5 GB RAM, Linux Mint 22.3). Physical Arm board port is pending.
-- Convolutional area reduction from cropping (>60%) and vision standalone RAM (~180 MB) are engineering estimates.
-- Severity mapping (`NONE`, `MEDIUM`, `HIGH`) is a heuristic manufacturing risk triage.
+---
+
+## 5. Streaming Architecture & Fallback Safety
+- **Dual-Panel Live Execution:**
+  - Terminal 1: Live operator advisory card (`inspect_live.py --view-advisory`).
+  - Terminal 2: Real-time inspection folder watcher (`inspect_live.py --watch-dir sequence_30 -x 1.0`).
+- **Decoupled Asynchronous Processing:**
+  - Vision classifier processes frames synchronously at 1.0s intervals.
+  - Normal frames bypass the LLM via the fast path (<0.1 ms logging).
+  - Defect frames trigger an asynchronous background Llama advisory worker.
+  - If a defect occurs while Llama is actively generating advice, an instantaneous deterministic rule-based fallback advisory is logged (`advice_source: fallback`), guaranteeing 0 pipeline stalls and 0 dropped inspection records.

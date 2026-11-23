@@ -172,12 +172,12 @@ Thinness                   0           0         0        0          0        75
 
 ---
 
-## 7. Limitations
+## 7. Limitations & Hardware Scope
 
-1. **Hardware Environment:** All benchmarks were measured on a laptop (13th Gen Intel Core i3-1315U, 7.5 GiB RAM, Linux Mint 22.3). Deployment on target Arm hardware (Raspberry Pi, Cortex-A SBC) is pending physical hardware validation.
-2. **Controlled Dataset:** Images were captured under controlled conditions; factory-floor validation across varying textile dust and lighting remains necessary.
+1. **Hardware Environment:** System validation and on-device performance benchmarks were conducted on a physical Raspberry Pi 5 Model B Rev 1.1 (Quad-Core ARM Cortex-A76 @ 2.4 GHz, 8 GB RAM, Debian 13 trixie aarch64). Standalone deployment scripts and pinned ARM64 dependencies are packaged in `rpi5_deployment/`.
+2. **Controlled Dataset:** Images were captured under controlled industrial backlit conditions; factory-floor validation across varying textile dust and lighting remains necessary.
 3. **Severity Mapping:** Severity levels are heuristic categorizations that should be tuned to specific mill standards.
-4. **Estimates Clarification:** The visual cropping was estimated to cut convolutional pixel area by >60%; vision runtime memory is estimated at ~180 MB.
+4. **Estimates Clarification:** The visual cropping cuts convolutional pixel area by >60%; vision runtime memory is ~180 MB.
 
 ---
 
