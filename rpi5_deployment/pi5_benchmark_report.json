@@ -1,0 +1,85 @@
+{
+  "system": {
+    "platform": "Linux-6.18.50+rpt-rpi-2712-aarch64-with-glibc2.41",
+    "system": "Linux",
+    "release": "6.18.50+rpt-rpi-2712",
+    "machine": "aarch64",
+    "python_version": "3.13.5",
+    "cpu_model": "Raspberry Pi 5 Model B Rev 1.1",
+    "hardware": "Unknown",
+    "total_ram": "8251728 kB",
+    "available_ram": "7756704 kB",
+    "os_pretty_name": "Debian GNU/Linux 13 (trixie)",
+    "rpi_telemetry": {
+      "temp": "temp=58.7'C",
+      "throttled": "throttled=0x0",
+      "volts": "volt=0.9317V"
+    },
+    "libraries": {
+      "torch": "2.15.0+cpu",
+      "torchvision": "0.29.2+cpu",
+      "executorch": "1.6.0",
+      "optimum": "2.0.0",
+      "optimum-executorch": "0.2.0.dev0",
+      "transformers": "5.0.0rc1",
+      "numpy": "2.5.4"
+    },
+    "ai_hat_plus": {
+      "hailo_status": "NOT DETECTED (hailortcli not in PATH or AI HAT+ not present)"
+    }
+  },
+  "vision": {
+    "file_size_bytes": 6215849,
+    "file_size_mb": 5.93,
+    "classes": [
+      "irregularity",
+      "knotting",
+      "long segment lack",
+      "normal",
+      "short segment lack",
+      "thinness"
+    ],
+    "total_params": 1524006,
+    "param_dtype": "torch.float32",
+    "decode_ms_avg": 5.3,
+    "preprocess_ms_avg": 6.77,
+    "inference_ms_avg": 24.72,
+    "inference_ms_min": 24.54,
+    "inference_ms_max": 24.86,
+    "throughput_fps": 40.5
+  },
+  "llama": {
+    "pte_file_bytes": 958521472,
+    "pte_file_mb": 914.12,
+    "load_time_sec": 7.4,
+    "ram_after_load_mb": 668.9,
+    "runs_count": 10,
+    "response_time_min_s": 4.99,
+    "response_time_avg_s": 6.69,
+    "response_time_max_s": 13.39,
+    "tok_per_sec_min": 1.42,
+    "tok_per_sec_avg": 3.8,
+    "tok_per_sec_max": 4.61,
+    "peak_ram_mb_min": 1494.6,
+    "peak_ram_mb_avg": 1496.3,
+    "peak_ram_mb_max": 1497.1,
+    "validator_pass_rate": "10/10 (100.0%)",
+    "sample_outputs": [
+      {
+        "defect": "knotting",
+        "severity": "HIGH",
+        "output": "ACTION: Remove defective yarn from production line.\nCHECK: Verify yarn inspection and packaging procedures."
+      },
+      {
+        "defect": "irregularity",
+        "severity": "MEDIUM",
+        "output": "ACTION: Check bobbin tension and yarn take-up.\nCHECK: Verify bobbin rotation and yarn feed rate."
+      }
+    ]
+  },
+  "log_sample": {
+    "header": "2026-11-20T15:53:04,frame_0004_normal_Image_20230227171420317.bmp,normal,1.000,NONE,Continue winding. Line nominal.,Spindle tension in optimal range.,537.7,fast_path,",
+    "latest_row": "2026-11-20T15:54:26,frame_0044_thinness_Image_20230227213214299.bmp,thinness,1.000,MEDIUM,Adjust bobbin tension on yarn with thinness.,Inspect yarn for excessive breakage or breakage on bobbin.,721.2,llm,2.6",
+    "total_logged_frames": 14
+  }
+}
