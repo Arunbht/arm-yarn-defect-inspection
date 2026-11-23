@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite the dataset below."
+title: "On-Device Yarn Defect Detection with Edge GenAI Advisory"
+authors:
+  - given-names: "Arun Bharathi"
+    family-names: "M"
+references:
+  - type: dataset
+    title: "Yarn Defect Dataset"
+    authors:
+      - given-names: "lizile"
+        family-names: "Li"
+    year: 2025
+    publisher:
+      name: "Mendeley Data"
+    doi: "10.17632/t7hcfmn482.1"
+    license: CC-BY-4.0

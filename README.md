@@ -4,7 +4,7 @@ Entry for the **Bharat AI-SoC Challenge 2026–27**, Problem Statement 5.
 
 This repository implements an end-to-end, fully air-gapped on-device inspection and machine operator advisory system:
 1. **Vision Classifier:** Fine-tuned MobileNetV3-Small classifying single-yarn defects (`yarn.pt`, 6.0 MB). Preprocessed with vertical central crop (`crop_band`, 30%–70%) and `Resize((96, 768))`. Evaluated at **98.00% accuracy on held-out chronological future frames** (and 100% on legacy random split).
-2. **Edge LLM Advisor:** Quantized Llama 3.2 1B Instruct exported via ExecuTorch/XNNPACK (`8da4w`/`8w`), generating two-line machine operator instructions (`ACTION:` and `CHECK:`) using a low-latency 1-shot prompt template (~6.5s TTFT, 3.8 tok/s decode on Cortex-A76).
+2. **Edge LLM Advisor:** Quantized Llama 3.2 1B Instruct exported via ExecuTorch/XNNPACK (`8da4w`/`8w`), generating two-line machine operator instructions (`ACTION:` and `CHECK:`) using a low-latency 1-shot prompt template (Pi 5: 6.69 s average response, 3.8 tok/s end-to-end).
 3. **Traceability & Alerting:** Automated CSV audit logging (`inspection_log.csv`) with live dual-panel terminal operator alerts and deterministic rule-based fallback when the LLM daemon is generating.
 
 ---
@@ -49,11 +49,17 @@ This produces a terminal report and saves a detailed machine-readable record to 
 
 ## 3. Performance Summary
 
-| Component | Target / Architecture | Latency / Speed | Memory / Footprint |
-| :--- | :--- | :--- | :--- |
-| **Vision Model** | MobileNetV3-Small (FP32) | ~36.8 ms / frame (~40.5 FPS) | 6.0 MB (`yarn.pt`), ~180 MB RSS |
-| **Edge LLM** | Llama 3.2 1B (`8da4w`/`8w` PTE) | ~6.55 s TTFT, ~6.7 s total | 914 MB (`model.pte`), ~1.49 GB peak RSS |
-| **Complete Pipeline** | Quad Cortex-A76 @ 2.4 GHz | 1.0 FPS sustained stream | Zero frame drops, zero swap thrashing |
+Measured values only. "Pending" means not yet measured at the deployed 96x768 input on the Raspberry Pi 5.
+
+| Component | Measured on | Result |
+|---|---|---|
+| Vision classifier (MobileNetV3-Small, 96x768) | Laptop, Intel i3-1315U | 33.6 ms inference, 91.5 ms camera-to-alert, 23.4 FPS (classifier only) |
+| Vision classifier | Raspberry Pi 5 | Image read 5.30 ms; preprocess + inference at 96x768 pending |
+| Llama 3.2 1B (1-shot) | Raspberry Pi 5 | 6.69 s average response (10 calls), 3.8 tok/s end-to-end, 7.4 s load, 1,496 MB peak RSS; TTFT not measured on the Pi |
+| Llama 3.2 1B (1-shot) | Laptop | 7.06 s mean TTFT, 9.12 s mean total (30 prompts) |
+| Offline pipeline | Laptop (network disabled) | Full pipeline ran with advice_source = llm |
+
+See the technical report for methodology, limitations and pending items.
 
 ---
 
