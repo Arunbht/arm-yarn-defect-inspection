@@ -89,8 +89,7 @@ def main():
     dataset_path = Path(args.dataset).expanduser().resolve()
     target_path = Path(args.target).expanduser().resolve()
 
-    print('
-' + '=' * 68)
+    print("\n" + "=" * 68)
     print(f"{COLORS['BOLD']}🚀 PS5 Camera Feed Simulator (Dataset Feeder){COLORS['RESET']}")
     print('=' * 68)
     print(f'  Source Dataset: {COLORS["BOLD"]}{dataset_path}{COLORS["RESET"]}')
@@ -103,24 +102,20 @@ def main():
         print(f'❌ ERROR: No class folders with BMP files found in {dataset_path}')
         sys.exit(1)
 
-    print(f'
-[✓] Discovered {len(class_map)} classes:')
+    print(f'\n[✓] Discovered {len(class_map)} classes:')
     for cname, files in sorted(class_map.items()):
         color = COLORS.get(cname, '')
         print(f'    • {color}{cname:<20}{COLORS["RESET"]}: {len(files):>5} images')
 
     target_path.mkdir(parents=True, exist_ok=True)
     if args.clean:
-        print(f'
-[*] Cleaning existing files from {target_path}...')
+        print(f'\n[*] Cleaning existing files from {target_path}...')
         for f in target_path.iterdir():
             if f.is_file() and not f.name.startswith('.'):
                 try: f.unlink()
                 except: pass
 
-    print(f"
-{COLORS['BOLD']}[*] Starting feed (Press Ctrl+C to stop)...{COLORS['RESET']}
-")
+    print(f"\n{COLORS['BOLD']}[*] Starting feed (Press Ctrl+C to stop)...{COLORS['RESET']}\n")
     print(f"{'#':<6} | {'CLASS':<20} | {'DUMPED FILENAME':<42} | {'INTERVAL'}")
     print('-' * 78)
 
@@ -149,13 +144,11 @@ def main():
                 time.sleep(args.interval)
     except KeyboardInterrupt:
         elapsed = time.time() - start_time
-        print('
-' + '=' * 68)
+        print('\n' + '=' * 68)
         print(f"{COLORS['BOLD']}🛑 Feeder Stopped!{COLORS['RESET']}")
         print(f'  Total Images Dumped: {total}')
         print(f'  Elapsed Time:        {elapsed:.1f}s')
-        print('=' * 68 + '
-')
+        print('=' * 68 + '\n')
 
 if __name__ == '__main__':
     main()
